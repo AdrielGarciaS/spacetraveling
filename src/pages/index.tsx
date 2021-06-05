@@ -69,7 +69,7 @@ export default function Home(props: HomeProps): JSX.Element {
         <ul>
           {posts.map(post => (
             <li key={post.uid} className={styles.post}>
-              <Link href="/">
+              <Link href={`post/${post.uid}`}>
                 <a>
                   <strong>{post.data.title}</strong>
                   <p>{post.data.subtitle}</p>
