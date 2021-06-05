@@ -1,5 +1,6 @@
 /* eslint-disable react/no-danger */
 import { GetStaticPaths, GetStaticProps } from 'next';
+import { useEffect, useState } from 'react';
 import { FiCalendar, FiClock, FiUser } from 'react-icons/fi';
 import { RichText } from 'prismic-dom';
 import Prismic from '@prismicio/client';
@@ -23,6 +24,24 @@ interface Post {
     author: string;
     content: {
       heading: string;
+      body: {
+        text: string;
+      }[];
+    }[];
+  };
+}
+
+interface PostFormatted {
+  first_publication_date: string | null;
+  readingTime: string;
+  data: {
+    title: string;
+    banner: {
+      url: string;
+    };
+    author: string;
+    content: {
+      heading: string;
       body: string;
     }[];
   };
@@ -35,9 +54,43 @@ interface PostProps {
 export default function Post(props: PostProps): JSX.Element {
   const { post } = props;
 
+  const [data, setData] = useState<PostFormatted | null>(null);
   const router = useRouter();
 
-  if (router.isFallback) return <p>Carregando ...</p>;
+  useEffect(() => {
+    if (!post) return;
+
+    const contentFormatted = post.data.content.map(content => {
+      return {
+        heading: content.heading,
+        body: RichText.asHtml(content.body),
+      };
+    });
+
+    const totalWords = post.data.content.reduce((acc, curr) => {
+      const bodyWordsQuantity = curr.body.reduce((bodyAcc, bodyCurr) => {
+        const words = bodyCurr.text.split(/\s/);
+        return bodyAcc + words.length;
+      }, 0);
+      return acc + bodyWordsQuantity;
+    }, 0);
+
+    const readingTime = Math.ceil(totalWords / 200);
+
+    const postFormatted = {
+      ...post,
+      first_publication_date: formatDate(new Date(post.first_publication_date)),
+      readingTime: `${readingTime} min`,
+      data: {
+        ...post.data,
+        content: contentFormatted,
+      },
+    };
+
+    setData(postFormatted);
+  }, []);
+
+  if (router.isFallback) return <div>Carregando...</div>;
 
   return (
     <div className={styles.container}>
@@ -46,28 +99,29 @@ export default function Post(props: PostProps): JSX.Element {
       </div>
 
       <main className={styles.content}>
-        <img src={post?.data.banner.url} alt="Banner" />
+        <img src={data?.data.banner.url} alt="Banner" />
 
         <article className={commonStyles.contentCenter}>
           <section className={styles.info}>
-            <h1>{post?.data.title}</h1>
+            <h1>{data?.data.title}</h1>
 
             <div>
               <time>
                 <FiCalendar size="1.2rem" />
-                {post?.first_publication_date}
+                {data?.first_publication_date}
               </time>
               <span>
                 <FiUser size="1.2rem" />
-                {post?.data.author}
+                {data?.data.author}
               </span>
               <span>
-                <FiClock size="1.2rem" />4 min
+                <FiClock size="1.2rem" />
+                {data?.readingTime}
               </span>
             </div>
           </section>
 
-          {post?.data.content.map(content => (
+          {data?.data.content.map(content => (
             <div key={content.heading} className={styles.post}>
               <h2>{content.heading}</h2>
               <div dangerouslySetInnerHTML={{ __html: content.body }} />
@@ -85,7 +139,7 @@ export const getStaticPaths: GetStaticPaths = async () => {
     [Prismic.predicates.at('document.type', 'posts')],
     {
       fetch: ['posts.uid'],
-      pageSize: 2,
+      pageSize: 0,
     }
   );
 
@@ -103,25 +157,7 @@ export const getStaticProps: GetStaticProps<PostProps> = async ({ params }) => {
   const prismic = getPrismicClient();
   const response = await prismic.getByUID('posts', String(slug), {});
 
-  const contentFormatted = response.data.content.map(content => {
-    return {
-      heading: content.heading,
-      body: RichText.asHtml(content.body),
-    };
-  });
-
-  const post = {
-    ...response,
-    first_publication_date: formatDate(
-      new Date(response.first_publication_date)
-    ),
-    data: {
-      ...response.data,
-      content: contentFormatted,
-    },
-  };
-
   return {
-    props: { post },
+    props: { post: response },
   };
 };
