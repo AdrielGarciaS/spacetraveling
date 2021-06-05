@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { GetStaticProps } from 'next';
 import Link from 'next/link';
 import Prismic from '@prismicio/client';
@@ -45,10 +45,16 @@ export default function Home(props: HomeProps): JSX.Element {
   const { postsPagination } = props;
   const { results, next_page } = postsPagination;
 
-  const [posts, setPosts] = useState(results);
+  const [posts, setPosts] = useState<Post[]>([]);
   const [nextPage, setNextPage] = useState<string | null>(next_page);
 
   const hasMore = Boolean(nextPage);
+
+  useEffect(() => {
+    const postsFormatted = results.map(formatPrismicPost);
+
+    setPosts(postsFormatted);
+  }, [results]);
 
   async function handleLoadMore(): Promise<void> {
     if (!nextPage) return;
@@ -113,12 +119,10 @@ export const getStaticProps: GetStaticProps<HomeProps> = async () => {
     }
   );
 
-  const posts: Post[] = postsResponse.results.map(formatPrismicPost);
-
   return {
     props: {
       postsPagination: {
-        results: posts,
+        results: postsResponse.results,
         next_page: postsResponse.next_page,
       },
     },
