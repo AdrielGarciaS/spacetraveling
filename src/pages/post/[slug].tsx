@@ -1,3 +1,4 @@
+/* eslint-disable react-hooks/exhaustive-deps */
 /* eslint-disable react/no-danger */
 import { GetStaticPaths, GetStaticProps } from 'next';
 import { useEffect, useState } from 'react';
@@ -13,6 +14,7 @@ import { getPrismicClient } from '../../services/prismic';
 import commonStyles from '../../styles/common.module.scss';
 import { formatDate } from '../../utils/format';
 import styles from './post.module.scss';
+import { Comments } from '../../components/Comments';
 
 interface Post {
   first_publication_date: string | null;
@@ -101,7 +103,9 @@ export default function Post(props: PostProps): JSX.Element {
       <main className={styles.content}>
         <img src={data?.data.banner.url} alt="Banner" />
 
-        <article className={commonStyles.contentCenter}>
+        <article
+          className={`${commonStyles.contentCenter} ${styles.postContainer}`}
+        >
           <section className={styles.info}>
             <h1>{data?.data.title}</h1>
 
@@ -128,6 +132,8 @@ export default function Post(props: PostProps): JSX.Element {
             </div>
           ))}
         </article>
+
+        <Comments />
       </main>
     </div>
   );

@@ -39,6 +39,12 @@
     }
   }
 
+  .postContainer {
+    margin-bottom: 4.125rem;
+    padding-bottom: 3.75rem;
+    border-bottom: 1px solid var(--gray-300);
+  }
+
   .post {
     font-size: 1.125rem;
     line-height: 1.563rem;
